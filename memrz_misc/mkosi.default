@@ -1,0 +1,11 @@
+[Output]
+Format=gpt_ext4
+Bootable=yes
+Output=rootfs.raw
+
+[Packages]
+Packages=
+         vim
+
+[Validation]
+Password=root

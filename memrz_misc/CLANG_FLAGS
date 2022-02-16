@@ -1,0 +1,8 @@
+#!/bin/bash
+
+CLANG_FLAGS="llvm=1"
+# CLANG_FLAGS="CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm STRIP=llvm-strip \
+#  OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf \
+#  HOSTCC=clang HOSTCXX=clang++ HOSTAR=llvm-ar HOSTLD=ld.lld"
+# LLVM_DIR=
+# CLANG_FLAGS=${CLANG_FLAGS//=/"=$LLVM_DIR/bin/"}
