@@ -129,7 +129,6 @@
 #include <linux/sched/task_stack.h>
 #include <linux/kasan-checks.h>
 #include <linux/mempool.h>
-#include <linux/memrz_alloc_type.h>
 
 #include<asm/fixmap.h>
 
@@ -488,86 +487,86 @@ unlckd_insert_get_access_counts(uint64_t src_ip, pid_t pid, struct
 
 static int reports_shown = 0;
 
-// static inline int find_and_update_kobj_access(uintptr_t src_va_ptr,
-// 		uintptr_t va_ptr, pid_t pid, size_t access_type, size_t size)
-// {
-// 	struct memorizer_kobj *kobj = NULL;
-// 	struct access_from_counts *afc = NULL;
+static inline int find_and_update_kobj_access(uintptr_t src_va_ptr,
+		uintptr_t va_ptr, pid_t pid, size_t access_type, size_t size)
+{
+	struct memorizer_kobj *kobj = NULL;
+	struct access_from_counts *afc = NULL;
 
-// 	if (in_pool(va_ptr)) {
-// 		track_access(MEM_MEMORIZER,size);
-// 		return -1;
-// 	}
+	if (in_pool(va_ptr)) {
+		track_access(MEM_MEMORIZER,size);
+		return -1;
+	}
 
-// 	/* Get the kernel object associated with this VA */
-// 	kobj = lt_get_kobj(va_ptr);
+	/* Get the kernel object associated with this VA */
+	kobj = lt_get_kobj(va_ptr);
 
-// 	if (!kobj) {
-// 		if (is_induced_obj(va_ptr)) {
-// 			kobj = general_kobjs[MEM_INDUCED];
-// 			track_access(MEM_INDUCED,size);
-// 		} else if (in_memblocks(va_ptr)) {
-// 			kobj = __create_kobj(MEM_UFO_MEMBLOCK, va_ptr, size,
-// 					MEM_UFO_MEMBLOCK);
-// 			if (!kobj) {
-// 				kobj = general_kobjs[MEM_MEMBLOCK];
-// 				track_untracked_access(MEM_MEMBLOCK,size);
-// 			} else {
-// 				track_access(MEM_MEMBLOCK,size);
-// 			}
-// 		} else {
-// 			enum AllocType AT = kasan_obj_type((void *)va_ptr,size);
-// 			kobj =  general_kobjs[AT];
-// 			switch(AT){
-// 				case MEM_STACK_PAGE:
-// 					kobj = __create_kobj(MEM_STACK_PAGE, va_ptr,
-// 							size, MEM_UFO_GLOBAL);
-// 					track_access(MEM_STACK_PAGE,size);
-// 					break;
-//                 case MEM_HEAP:
-// #if 1
-//                     // Debugging feature to print a KASAN report for missed heap accesses.
-//                         // Only prints up to 5 reports.
-//                     if (reports_shown < 5){
-//                         kasan_report((unsigned long) va_ptr, size, 1, (unsigned long)&kasan_report);
-//                         reports_shown++;
-//                     }
-// #endif
-//                     kobj = add_heap_UFO(va_ptr);
+	if (!kobj) {
+		if (is_induced_obj(va_ptr)) {
+			kobj = general_kobjs[MEM_INDUCED];
+			track_access(MEM_INDUCED,size);
+		} else if (in_memblocks(va_ptr)) {
+			kobj = __create_kobj(MEM_UFO_MEMBLOCK, va_ptr, size,
+					MEM_UFO_MEMBLOCK);
+			if (!kobj) {
+				kobj = general_kobjs[MEM_MEMBLOCK];
+				track_untracked_access(MEM_MEMBLOCK,size);
+			} else {
+				track_access(MEM_MEMBLOCK,size);
+			}
+		} else {
+			enum AllocType AT = kasan_obj_type((void *)va_ptr,size);
+			kobj =  general_kobjs[AT];
+			switch(AT){
+				case MEM_STACK_PAGE:
+					kobj = __create_kobj(MEM_STACK_PAGE, va_ptr,
+							size, MEM_UFO_GLOBAL);
+					track_access(MEM_STACK_PAGE,size);
+					break;
+                case MEM_HEAP:
+#if 1
+                    // Debugging feature to print a KASAN report for missed heap accesses.
+                        // Only prints up to 5 reports.
+                    if (reports_shown < 5){
+                        kasan_report((unsigned long) va_ptr, size, 1, (unsigned long)&kasan_report);
+                        reports_shown++;
+                    }
+#endif
+                    kobj = add_heap_UFO(va_ptr);
 
-//                     track_access(MEM_UFO_HEAP,size);
-//                     break;
-//                 case MEM_GLOBAL:
-//                     kobj = __create_kobj(MEM_UFO_GLOBAL, va_ptr,
-//                                  size, MEM_UFO_GLOBAL);
-//                     track_access(MEM_UFO_GLOBAL,size);
-//                     break;
-//                 case MEM_NONE:
-//                     kobj = __create_kobj(MEM_UFO_NONE, va_ptr,
-//                                  size, MEM_UFO_NONE);
-//                     track_access(MEM_UFO_NONE,size);
-//                     break;
-//                 default:
-//                     track_untracked_access(AT,size);
-// 			}
-// 		}
-// 	} else {
-// 		track_access(kobj->alloc_type, size);
-// 	}
+                    track_access(MEM_UFO_HEAP,size);
+                    break;
+                case MEM_GLOBAL:
+                    kobj = __create_kobj(MEM_UFO_GLOBAL, va_ptr,
+                                 size, MEM_UFO_GLOBAL);
+                    track_access(MEM_UFO_GLOBAL,size);
+                    break;
+                case MEM_NONE:
+                    kobj = __create_kobj(MEM_UFO_NONE, va_ptr,
+                                 size, MEM_UFO_NONE);
+                    track_access(MEM_UFO_NONE,size);
+                    break;
+                default:
+                    track_untracked_access(AT,size);
+			}
+		}
+	} else {
+		track_access(kobj->alloc_type, size);
+	}
 
-// 	/* Grab the object lock here */
-// 	write_lock(&kobj->rwlock);
+	/* Grab the object lock here */
+	write_lock(&kobj->rwlock);
 
-// 	/* Search access queue to the entry associated with src_ip */
-// 	afc = unlckd_insert_get_access_counts(src_va_ptr, pid, kobj);
+	/* Search access queue to the entry associated with src_ip */
+	afc = unlckd_insert_get_access_counts(src_va_ptr, pid, kobj);
 
-// 	/* increment the counter associated with the access type */
-// 	if (afc)
-// 		access_type ? ++(afc->writes) : ++(afc->reads);
+	/* increment the counter associated with the access type */
+	if (afc)
+		access_type ? ++(afc->writes) : ++(afc->reads);
 
-// 	write_unlock(&kobj->rwlock);
-// 	return afc ? 0 : -1;
-// }
+	write_unlock(&kobj->rwlock);
+	return afc ? 0 : -1;
+}
 
 //==-- Memorizer memory access tracking -----------------------------------==//
 
@@ -600,7 +599,7 @@ void __always_inline memorizer_mem_access(uintptr_t addr, size_t size, bool
 	}
 
 	local_irq_save(flags);
-	// find_and_update_kobj_access(ip,addr,-1,write,size);
+	find_and_update_kobj_access(ip,addr,-1,write,size);
 	local_irq_restore(flags);
 
 	__memorizer_exit();
