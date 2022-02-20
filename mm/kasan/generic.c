@@ -167,7 +167,7 @@ static __always_inline bool check_region_inline(unsigned long addr,
 {
 	if (!kasan_arch_is_ready())
 		return true;
-	memorizer_mem_access(addr, size, write, ret_ip);
+	// memorizer_mem_access(addr, size, write, ret_ip);
 
 	if (unlikely(size == 0))
 		return true;
