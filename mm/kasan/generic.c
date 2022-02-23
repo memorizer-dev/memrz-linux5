@@ -237,33 +237,6 @@ u8 detect_access_kind(void * p){
     return shadow_val;
 }
 
-// Another variant of this logic. Still debugging.
-u8 detect_access_kind_alt(void * p){
-
-  // Calculate page-aligned address
-  void * p_aligned = (void *) ((unsigned long) p & (~((1 << PAGE_SHIFT) - 1)));
-
-  // Initialize shadow pointer and current shadow value
-  u8* shadow_ptr = kasan_mem_to_shadow(p_aligned);
-  u8 shadow_val = *shadow_ptr;
-
-  // Set maximum search distance
-  u8* search_max = kasan_mem_to_shadow(p_aligned + 1*PAGE_SIZE);
-  /* Search until we (1) find a valid shadow type identifier, (2)
-     exceed the max search distance, or (3) would go beyond end of
-     shadow space.
-     Note that shadow values that are nonzero but less than
-     KASAN_SHADOW_SCALE encode a partial red zone, and you need
-     to look at the next byte to get the kind. */
-  while (shadow_val < KASAN_GRANULE_SIZE &&
-	 shadow_ptr < search_max &&
-	 shadow_ptr < (u8 *)KASAN_SHADOW_END){
-    shadow_ptr++;
-    shadow_val = *shadow_ptr;
-  }
-  return shadow_val;
-}
-
 enum AllocType kasan_obj_type(const void *p, unsigned int size)
 {
     /* If we are below the Kernel address space */
@@ -378,6 +351,7 @@ EXPORT_SYMBOL(__asan_unregister_globals);
 	EXPORT_SYMBOL(__asan_load##size##_noabort);			\
 	void __asan_store##size(unsigned long addr)			\
 	{								\
+		pr_info("check_region_inline(): entering..."); \
 		check_region_inline(addr, size, true, _RET_IP_);	\
 	}								\
 	EXPORT_SYMBOL(__asan_store##size);				\

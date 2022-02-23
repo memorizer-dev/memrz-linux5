@@ -4,6 +4,7 @@
 #
 
 ccflags-y := -fno-function-sections -fno-data-sections
+CFLAGS_main.o := -O1 -mllvm --print-changed # For llvm
 
 obj-y                          := main.o version.o mounts.o
 ifneq ($(CONFIG_BLK_DEV_INITRD),y)

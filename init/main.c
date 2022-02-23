@@ -930,6 +930,17 @@ static void __init print_unknown_bootoptions(void)
 	memblock_free_ptr(unknown_options, len);
 }
 
+__attribute__((annotate("to-instrument")))
+void to_instrumented(void) {
+	unsigned long n[100] = {1,2,3,4,5,6,7,8,9,10,11,12,13,};
+	for (int i = 0; i < 100; i++) {
+		n[i]=(random_get_entropy() ^ jiffies) % 100;
+	}
+	unsigned long randIdx = (random_get_entropy() ^ jiffies) % 100;
+	
+	pr_info("to_instrumented() is called %d\n", n[randIdx]);
+}
+
 asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 {
 	char *command_line;
@@ -1059,6 +1070,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	profile_init();
 	call_function_init();
 	WARN(!irqs_disabled(), "Interrupts were enabled early\n");
+	to_instrumented();
 
 	early_boot_irqs_disabled = false;
 	local_irq_enable();
