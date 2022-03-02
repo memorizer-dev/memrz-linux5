@@ -51,6 +51,10 @@
 #include <asm/vsyscall.h>
 #include <linux/vmalloc.h>
 
+#ifdef CONFIG_XNSDETECTOR
+#include <linux/memorizer.h>
+#endif
+
 /*
  * max_low_pfn_mapped: highest directly mapped pfn < 4 GB
  * max_pfn_mapped:     highest directly mapped pfn > 4 GB
@@ -1138,6 +1142,10 @@ void __init setup_arch(char **cmdline_p)
 
 	if (!early_xdbc_setup_hardware())
 		early_xdbc_register_console();
+	
+	#ifdef CONFIG_XNSDETECTOR
+	memorizer_init();
+	#endif
 
 	x86_init.paging.pagetable_init();
 

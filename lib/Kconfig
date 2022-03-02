@@ -683,6 +683,10 @@ config STACK_HASH_ORDER
 config SBITMAP
 	bool
 
+config XNSDETECTOR
+	bool "Detector for cross-namespace attack"
+	default y
+
 config PARMAN
 	tristate "parman" if COMPILE_TEST
 
